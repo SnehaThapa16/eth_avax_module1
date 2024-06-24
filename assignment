@@ -1,0 +1,58 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.25;
+
+contract VehicleBay {
+    address public admin;
+    uint public maxBays = 6;
+    uint public currentVehicleCount = 0;
+
+    constructor() {
+        admin = msg.sender;
+    }
+
+    modifier onlyAdmin() {
+        require(msg.sender == admin, "Only the admin can access this function");
+        _;
+    }
+
+    mapping(uint => bool) public isBayOccupied;
+    mapping(uint => address) public vehicleAtBay;
+
+    function parkVehicle(address vehicleAddress) public onlyAdmin {
+        require(currentVehicleCount < maxBays, "No bay available");
+        for (uint i = 1; i <= maxBays; i++) {
+            if (!isBayOccupied[i]) {
+                isBayOccupied[i] = true;
+                vehicleAtBay[i] = vehicleAddress;
+                currentVehicleCount++;
+                break;
+            }
+        }
+    }
+
+    function unparkVehicle(address vehicleAddress) public onlyAdmin {
+        require(currentVehicleCount > 0, "No vehicle to remove");
+        uint bayOfVehicle = 0;
+        bool vehicleFound = false;
+
+        for (uint i = 1; i <= maxBays; i++) {
+            if (vehicleAtBay[i] == vehicleAddress) {
+                bayOfVehicle = i;
+                vehicleFound = true;
+                break;
+            }
+        }
+
+        if (!vehicleFound) {
+            revert("Vehicle not found!");
+        }
+
+        vehicleAtBay[bayOfVehicle] = address(0);
+        isBayOccupied[bayOfVehicle] = false;
+        currentVehicleCount--;
+    }
+
+    function verifyVehicleCount() public view {
+        assert(currentVehicleCount > 0 && currentVehicleCount <= maxBays);
+    }
+}
